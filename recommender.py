@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from similarity_functions import get_sim
 
-debug = False
+debug = True
 class Recommender:
     def __init__(self, table: pd.DataFrame, sim_func="pearson") -> None:
         # self.dataset = pd.read_csv(path_to_dataset)
@@ -42,8 +42,8 @@ class Recommender:
         num = 0.0
         denom = 0.0
         for _, row in neighbours.iterrows():
-            if debug:
-                print("predicting for movie ", movie_id)
+            # if debug:
+            #     print("predicting for movie ", movie_id)
             b = row["neighbour"]
             s = float(row["sim"])
             user_b_rating = float(self.table.loc[b, movie_id])
