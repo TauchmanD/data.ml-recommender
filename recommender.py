@@ -83,7 +83,7 @@ class Recommender:
     def _sim(self, user_id_a: int, user_id_b: int) -> float:
         return self.sim_func(self.table,user_id_a, user_id_b)
 
-    def get_predictions_for_group_v2(self, group:pd.DataFrame) -> pd.DataFrame:
+    def get_predictions_for_group(self, group:pd.DataFrame) -> pd.DataFrame:
         """
         Return a copy of the user×movie table where all NaNs are replaced with
         collaborative-filtering predictions (existing ratings are kept).
