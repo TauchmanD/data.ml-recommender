@@ -4,6 +4,8 @@ a. DONE
 b. Pearson correlation function is implemented in the `similarity_functions.py`
 c. prediction function is implemented in the `recommender.py`
 d. Popularity-Discounted, Significance-Weighted Pearson similarity. was implemented in the `similarity_functions.py`
+- Why "Significance-Weighted Pearson similarity"? It’s useful because it down-weights blockbuster items and shrinks tiny-overlap correlations, so my user–user similarities reflect true shared taste and produce steadier recommendations.
+e. 
 
 
 
