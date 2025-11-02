@@ -1,4 +1,6 @@
 from recommender import Recommender
+import pandas as pd
+import random
 import time
 from group_aggregation_functions import get_group_agg_func
 
@@ -18,6 +20,18 @@ def test_that_CF_are_same():
 
 
 
+def aggregate_with_average():
+    r = Recommender.load_from_path("ml-latest-small/ratings.csv")
+    random_group_of_five = r.table.sample(5, random_state=42)
+    predictions = r.get_predictions_for_group_v2(random_group_of_five)
+    agg_func = get_group_agg_func("average")
+    aggregated_list = agg_func(predictions).iloc[:,: 10] # only first 10 movies
+
+    movies_df = pd.read_csv('ml-latest-small/movies.csv')
+    print(aggregated_list)
+    movie_names = movies_df.set_index('movieId').loc[aggregated_list.columns]
+    print("those are the most popular movies: ", movie_names)
+
 def main():
     r = Recommender.load_from_path("ml-latest-small/ratings.csv")
     group = Recommender(r.table.sort_index().head(10).copy())
@@ -33,5 +47,5 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    test_that_CF_are_same()
+    aggregate_with_average()
 
