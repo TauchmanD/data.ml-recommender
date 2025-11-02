@@ -11,7 +11,7 @@ def test_that_CF_are_same():
 
     r = Recommender.load_from_path("ml-latest-small/ratings.csv")
     single_user_table = r.table.loc[[3]]
-    predictions = r.get_predictions_for_group_v2(single_user_table)
+    predictions = r.get_predictions_for_group(single_user_table)
     prediction_movie_3 = predictions.loc[3,3]
 
     result = value==prediction_movie_3
@@ -23,7 +23,7 @@ def test_that_CF_are_same():
 def aggregate_with_average():
     r = Recommender.load_from_path("ml-latest-small/ratings.csv")
     random_group_of_five = r.table.sample(5, random_state=42)
-    predictions = r.get_predictions_for_group_v2(random_group_of_five)
+    predictions = r.get_predictions_for_group(random_group_of_five)
     agg_func = get_group_agg_func("average")
     aggregated_list = agg_func(predictions).iloc[:,: 10] # only first 10 movies
 
@@ -31,6 +31,36 @@ def aggregate_with_average():
     print(aggregated_list)
     movie_names = movies_df.set_index('movieId').loc[aggregated_list.columns]
     print("those are the most popular movies: ", movie_names)
+
+def aggregate_with_least_misery():
+    r = Recommender.load_from_path("ml-latest-small/ratings.csv")
+    random_group_of_five = r.table.sample(5, random_state=42)
+    predictions = r.get_predictions_for_group(random_group_of_five)
+    agg_func = get_group_agg_func("least_misery")
+    aggregated_list = agg_func(predictions).iloc[:,: 10] # only first 10 movies
+
+    movies_df = pd.read_csv('ml-latest-small/movies.csv')
+    print(aggregated_list)
+    movie_names = movies_df.set_index('movieId').loc[aggregated_list.columns]
+    print("those are the most popular movies: ", movie_names)
+
+    for mId in aggregated_list.columns:
+        responsible = agg_func[mId]
+        print("For movie ", movies_df.set_index('movieId').loc[mId, "title"], " with rating ", predictions.loc[responsible[0],mId], " are responsible users:  ", responsible)
+    
+
+def compare_aggregations():
+    r = Recommender.load_from_path("ml-latest-small/ratings.csv")
+    random_group_of_five = r.table.sample(5, random_state=42)
+    predictions = r.get_predictions_for_group(random_group_of_five)
+    agg_func_average = get_group_agg_func("average")
+    agg_func_least_misery = get_group_agg_func("least_misery")
+
+    aggregated_list_1 = agg_func_average(predictions).iloc[:,: 10]
+    aggregated_list_2 = agg_func_least_misery(predictions).iloc[:,: 10]
+    print(aggregated_list_1)
+    print(aggregated_list_2)
+
 
 def main():
     r = Recommender.load_from_path("ml-latest-small/ratings.csv")
@@ -47,5 +77,4 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    aggregate_with_average()
-
+    aggregate_with_least_misery()
