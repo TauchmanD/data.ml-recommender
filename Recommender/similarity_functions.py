@@ -1,27 +1,36 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+
+
 class Sim_func(ABC):
     @abstractmethod
-    def __call__(self,table: pd.DataFrame, user_id_a: int, user_id_b: int) -> float:
+    def __call__(self, table: pd.DataFrame, user_id_a: int, user_id_b: int) -> float:
         pass
 
+
 class Pearson_correlation(Sim_func):
-    def __call__(self,table:pd.DataFrame, user_id_a: int, user_id_b: int) -> float:
-        common = table.loc[user_id_a].notna() & table.loc[user_id_b].notna() # creates boolean column matrix mask that represents which movies does user A and user B have in common
-        matrix = table.columns[common] # selects those movies using the common mask
+    def __call__(self, table: pd.DataFrame, user_id_a: int, user_id_b: int) -> float:
+        common = (
+            table.loc[user_id_a].notna() & table.loc[user_id_b].notna()
+        )  # creates boolean column matrix mask that represents which movies does user A and user B have in common
+        matrix = table.columns[common]  # selects those movies using the common mask
 
         if len(matrix) == 0:
             return 0
-        
-        ratings_a = table.loc[user_id_a, matrix].astype(float) # locates ratings for user_id_a for movies in the `matrix` object
+
+        ratings_a = table.loc[user_id_a, matrix].astype(
+            float
+        )  # locates ratings for user_id_a for movies in the `matrix` object
         ratings_b = table.loc[user_id_b, matrix].astype(float)
 
-        ra_mean = ratings_a.mean() # calculates mean value, scalar
+        ra_mean = ratings_a.mean()  # calculates mean value, scalar
         rb_mean = ratings_b.mean()
 
         num = np.sum((ratings_a - ra_mean) * (ratings_b - rb_mean))
-        denom = np.sqrt(np.sum((ratings_a - ra_mean)**2)) * np.sqrt(np.sum((ratings_b - rb_mean)**2))
+        denom = np.sqrt(np.sum((ratings_a - ra_mean) ** 2)) * np.sqrt(
+            np.sum((ratings_b - rb_mean) ** 2)
+        )
 
         return 0 if denom == 0 else num / denom
 
@@ -49,6 +58,7 @@ class PD_SignificanceWeightedPearson(Sim_func):
     eps : float
         Numerical stability constant.
     """
+
     def __init__(
         self,
         alpha: float = 5.0,
@@ -97,7 +107,9 @@ class PD_SignificanceWeightedPearson(Sim_func):
         w_vals = np.asarray(w, dtype=float)
 
         num = np.sum(w_vals * xa_vals * xb_vals)
-        den = np.sqrt(np.sum(w_vals * xa_vals * xa_vals)) * np.sqrt(np.sum(w_vals * xb_vals * xb_vals))
+        den = np.sqrt(np.sum(w_vals * xa_vals * xa_vals)) * np.sqrt(
+            np.sum(w_vals * xb_vals * xb_vals)
+        )
 
         if den <= self.eps:
             return 0.0
@@ -111,10 +123,9 @@ class PD_SignificanceWeightedPearson(Sim_func):
         # Clip to valid correlation range
         return float(np.clip(s, -1.0, 1.0))
 
+
 def get_sim(sim_name="pearson"):
     if sim_name == "pearson":
         return Pearson_correlation()
     if sim_name == "PD_SignificanceWeightedPearson":
         return PD_SignificanceWeightedPearson()
-
-
