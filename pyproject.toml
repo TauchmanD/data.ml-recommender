@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Recommender"
+authors = [
+  { name="Denis Tauchman", email="denis.tauchman@tul.cz" },
+  { name="Tomáš Janovec", email="tomas.janovec@tul.cz" }
+]
+description = "A simple python package designed for the Recommender Systems course"
+version = "1.0.0"
+readme="README.md"
+dependencies = [
+  "rich",
+  "rich-menu",
+  "numpy",
+  "pandas"
+]
+
+[tool.setuptools.packages.find]
+where = ["Recommender"]
