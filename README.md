@@ -37,7 +37,7 @@ pip install .
 ```console
 python -m Recommender
 ```
-- Currencly you should be prompted with this menu:
+- Currently you should be prompted with this menu:
 ![Menu Example](docs/menu.png)
 
 
