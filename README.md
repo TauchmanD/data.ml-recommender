@@ -12,8 +12,36 @@
   The average aggregation method is implemented in `group_aggregation_functions.py`.  
   The Least Misery aggregation method is implemented in `group_aggregation_functions.py`.  
   Both methods are tested in `group_aggregation_pipeline.py`.
+- **f.** In the `metric_functions.py` is the implementation of function called "get_disagreements_based_on_order", that is our definition of the disagreement function. And in the `group_aggregation_function.py` there is class "Remove_worst_item_agg", that implements our proposed aggregation function. In the folder `presentations` there is a first presentation as mentioned in the point f
 
 ---
+
+
+### Installatation tutorial:
+- 1. Download the Dataset `ml-latest-small`
+- 2. Create and activate the python virtual environment
+```console
+# linux and mac
+python -m venv .venv
+source .venv/bin/activate #on linux
+# Windows
+py -m venv .venv
+.\.venv\Scripts\activate
+```
+- 3. Install the package
+```console
+pip install .
+```
+### What to do?
+- We have prepared a simple demo, you can run few commands for testing most of the components. This command will run code inside the `Recommender/__main__.py`
+```console
+python -m Recommender
+```
+- Currencly you should be prompted with this menu:
+![Menu Example](docs/menu.png)
+
+
+
 
 ### Working Dataset Acknowledgment
 
