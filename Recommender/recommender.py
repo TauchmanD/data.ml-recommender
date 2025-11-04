@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from similarity_functions import get_sim
+from rich import print
 
 debug = True
 class Recommender:
@@ -92,7 +93,7 @@ class Recommender:
 
         for user_id, row_vals in full_table.iterrows():
             if debug:
-                print("getting predictions for ", user_id)
+                print("\n getting predictions for ", user_id)
             # Columns (movies) this user hasn't rated
             missing_movies = row_vals.index[row_vals.isna()]
             if len(missing_movies) == 0:
