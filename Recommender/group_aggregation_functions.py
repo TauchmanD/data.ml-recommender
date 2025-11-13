@@ -9,6 +9,19 @@ class Aggregation_func(ABC):
     def __call__(self, rankings: pd.DataFrame) -> pd.DataFrame:
         pass
 
+class Dictator_agg(Aggregation_func):
+
+    def set_dictator(self, dictator_id):
+        self.dictator_id = dictator_id
+
+    def __call__(self, rankings: pd.DataFrame) -> pd.DataFrame:
+        # rankings: users x items
+        row = rankings.loc[self.dictator_id]
+        order = row.sort_values(ascending=False).index
+        df = row.to_frame().T  # 1 x items
+        df = df.loc[:, order]
+        df.index = [f"dictator_{self.dictator_id}"]
+        return df
 
 class Average_agg(Aggregation_func):
     def __call__(self, rankings: pd.DataFrame) -> pd.DataFrame:
@@ -156,6 +169,8 @@ def get_group_agg_func(func_name="average"):
     if func_name == "reorder":
         return Remove_worst_item_agg()
 
+    if func_name == "dictator":
+        return Dictator_agg()
 
 if __name__ == "__main__":
     agg_func = get_group_agg_func("average")
