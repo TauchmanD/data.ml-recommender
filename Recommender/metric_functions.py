@@ -33,8 +33,7 @@ import pandas as pd
 
 
 
-def get_satisfaction_for_users(predictions: pd.DataFrame,
-                               aggregated_rankings: pd.DataFrame | pd.Series) -> pd.DataFrame:
+def get_satisfaction_for_users(predictions: pd.DataFrame, aggregated_rankings: pd.DataFrame | pd.Series) -> pd.DataFrame:
     """
     predictions: users x movieId (CF scores). Index=userId, columns=movieId.
     aggregated_rankings:
@@ -85,8 +84,8 @@ def get_overall_satisfaction(predictions, sequence):
     #     print(seq)
     #     print("_"*10)
     #     satisfactions.loc[idx] = get_satisfaction_for_users(predictions, seq)
-    print("Those are satisfactions per the rounds")
-    print(satisfactions)
+    # print("Those are satisfactions per the rounds")
+    # print(satisfactions)
     return satisfactions.mean(axis=1)
     
     
