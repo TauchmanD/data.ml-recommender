@@ -37,7 +37,7 @@ class SIAA(Sequence):
         # First iteration uses Average aggregation (as in the paper / your skeleton)
         # self.avg_agg = get_group_agg_func("average")
         # self.avg_agg = get_group_agg_func("least_misery")
-        self.avg_agg = get_group_agg_func("dictator")
+        self.avg_agg = get_group_agg_func("dictator") # This is for me to see how the method reacts to terrible first recommendation
         self.avg_agg.set_dictator(91)
         self.repeat = False
 
@@ -79,11 +79,11 @@ class SIAA(Sequence):
         overall_sat = get_overall_satisfaction(self.preferences, self._history)
         # Series indexed by userId
 
-        # 2) Disagreement userDis(u, Gr_{j-1}) based on previous round only
+        # 2) a  Disagreement userDis(u, Gr_{j-1}) based on previous round only
 
         # prev_sats = get_satisfaction_for_users(self.preferences, self.previous_recommendations)
         # per_user_disagreements = get_disagreements_per_user(prev_sats)
-        # My alternative, disagreements based on the order
+        # 2) b My alternative, disagreements based on the order
 
         penalties, _ = get_disagreements_based_on_order(self.preferences, self.previous_recommendations)
         per_user_disagreements = penalties.sum(axis=1)  # Series per user
@@ -174,9 +174,6 @@ class dynamicSIAA(Sequence):
             # 2) scalar group disagreement for that round
             group_disagreement = get_disagreements_for_users(prev_sats)
 
-            # penalties, _ = get_disagreements_based_on_order(self.preferences, self.previous_recommendations)
-            # per_user_disagreements = penalties.sum(axis=1)  # Series per user
-            # user_dis = per_user_disagreements
             # 3) adapt b based on disagreement
             print("GROUP DISAGREEMENT IS ", group_disagreement)
             if group_disagreement > self.disagreement_threshold:
