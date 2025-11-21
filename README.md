@@ -23,6 +23,14 @@
 - 4. We added `Compute sequential predictions with our proposed method` option to our `python -m Recommender` for trying to run our algorhitm
 
 ---
+## Part 3
+- We propose slight change to MMR diversification method that is used on top of SIAA. Check `SIAADiversification` in `diversification.py`.
+- We create custom embeddings from movie genres in order to compare the similarity between movies.
+- We compute diversity of list in current round and in previous rounds (so we don't get recommended the same genres from previous rounds) in order to achieve max diversity
+- We use new parameter `alpha` to change ratio between diversity in current round and previous rounds
+- Check the presentation in `presentations/Diversity MMR.pdf`
+
+---
 ### Installatation tutorial:
 - 1. Download the Dataset `ml-latest-small`
 - 2. Create and activate the python virtual environment
