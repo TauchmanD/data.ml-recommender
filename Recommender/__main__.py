@@ -1,6 +1,7 @@
 from Recommender.group_aggregation_pipeline import aggregate_with_average, aggregate_with_least_misery, aggregate_with_custom_method
 from Recommender.recommender import Recommender
 from Recommender.sequence_pipeline import main as sequence_run
+from Recommender.Explanation.explanation import generate_explanations_experiment
 from rich_menu import Menu
 from rich.spinner import Spinner
 from rich.console import Console
@@ -14,6 +15,7 @@ def menu():
         "Compute predictions for 5 random users that form a group, aggregated using LEAST_MISERY",
         "Compute predictions for 5 random users that form a group, aggregated using Custom aggregation",
         "Compute sequential predictions with our proposed method",
+        "Run simulation and get counterfactual explanations",
         "Exit",
         panel_title="Recommender Menu",
         selection_char="->",
@@ -38,6 +40,9 @@ def menu():
         case "Compute sequential predictions with our proposed method":
             with console.status("[bold green] Computing...", spinner="dots"):
                 sequence_run()
+        case "Run simulation and get counterfactual explanations":
+            with console.status("[bold green] Running...", spinner="dots"):
+                generate_explanations_experiment()
         case "Exit":
             exit()
 
