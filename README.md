@@ -48,6 +48,7 @@
   3. **Most popular genre**
      - We find the most popular genre among the group, based on how often the users rate movies in that genre.
      - The candidates are **all movies belonging to that genre**.
+- Note that when we normalize the number ratings for each user, so users with more ratings does not have more influence.
 
 - To test these methods—and especially the way we alter preferences before feeding them into the black-box recommender—we also provide `Recommender/Explanation/explanations_experiments.py`, where we experiment with substituting ratings for certain movies with either `NaN` or `0`.  
   Our interpretation:
