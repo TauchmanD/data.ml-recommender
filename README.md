@@ -67,6 +67,8 @@
 - We have added an option in the main program called **“Run simulation and get counterfactual explanations”**. You can run it with:
   ```bash
   python -m Recommender
+  ```
+- We also created a presentation localted in `presentations`
 
 ---
 
