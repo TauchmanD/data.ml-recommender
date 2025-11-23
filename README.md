@@ -30,7 +30,45 @@
 - We use new parameter `alpha` to change ratio between diversity in current round and previous rounds
 - Check the presentation in `presentations/Diversity MMR.pdf`
 
+
 ---
+## Part 4
+- All code related to explanations is in the Python package `Recommender/Explanation`.
+
+- Instead of trying to find the exact individual items that would alter the presence of a certain movie in the recommendations, we decided to target **classes of items**. We currently propose three such classes, implemented in `Recommender/Explanation/candidates.py`:
+
+  1. **Decade**
+     - We divide movies into decades and, for each decade, compute how popular it is for the group.
+     - The candidate list consists of **all movies** that belong to the most popular decade.
+
+  2. **Most agreed items**
+     - We find items that are rated by multiple users in the group and compute the variance of their ratings.
+     - For simplicity, we choose the **top 5 movies with the lowest variance** (i.e. highest agreement). These movies form the candidate set.
+
+  3. **Most popular genre**
+     - We find the most popular genre among the group, based on how often the users rate movies in that genre.
+     - The candidates are **all movies belonging to that genre**.
+
+- To test these methods—and especially the way we alter preferences before feeding them into the black-box recommender—we also provide `Recommender/Explanation/explanations_experiments.py`, where we experiment with substituting ratings for certain movies with either `NaN` or `0`.  
+  Our interpretation:
+  - `NaN` means the movie is **not rated** (no engagement).
+  - `0` is treated as if the user would **strongly dislike** the movie.  
+  In this sense, a statement like *“If your group hated comedy movies…”* is a valid counterfactual explanation, because it is easy to understand.
+
+- Finally, we test all methods together in `Recommender/Explanation/explanation.py`, where we run the entire pipeline.  
+  For each candidate list, we:
+  1. Compute recommendations with the modified ratings.
+  2. Compare the new aggregated list to the original aggregated list.
+  3. For every movie that disappears from the original top-k in the new list, we provide a counterfactual explanation based on how that particular candidate set was constructed.
+
+- We find that our explanation strategies are generally easy to understand, but sometimes produce surprising or not-so-good results. For example, when we removed all movies from the 1990s, we observed that it stopped recommending a movie from the 1930s, which is clearly not an intuitive explanation and may make the user question the system.
+
+- We have added an option in the main program called **“Run simulation and get counterfactual explanations”**. You can run it with:
+  ```bash
+  python -m Recommender
+
+---
+
 ### Installatation tutorial:
 - 1. Download the Dataset `ml-latest-small`
 - 2. Create and activate the python virtual environment
