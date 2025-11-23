@@ -19,7 +19,6 @@ def _load_movies_df() -> pd.DataFrame:
         if not m:
             return None
         try:
-            # Make sure it's an INT, not float
             return int(m.group(1))
         except ValueError:
             return None
@@ -27,7 +26,7 @@ def _load_movies_df() -> pd.DataFrame:
     def _year_to_decade(year) -> str | None:
         if year is None or pd.isna(year):
             return None
-        year_int = int(year)  # <--- critical: cast to int to avoid 1990.0
+        year_int = int(year)
         if year_int < 1950 or year_int > 2029:
             return None
         decade_start = (year_int // 10) * 10
@@ -79,12 +78,15 @@ class Decade(Candidates):
 
     __call__:
         For the given group rating table it will:
-        - For each decade, compute the average group popularity
-          (average #ratings per movie in that decade, restricted to movies the group touched).
-        - Choose the decade with the highest average popularity.
+
+        - For each user, compute the normalized distribution of their ratings
+          over decades (per-user shares sum to 1).
+        - Average these shares across users, so each user has equal weight.
+        - Choose the decade with the highest average share.
         - Return ALL movie ids from that decade (even those not rated by the users).
 
-        It considers: 50s, 60s, 70s, 80s, 90s, 2000s, 2010s, 2020s.
+        This avoids the situation where one heavy rater with thousands of
+        1990s movies completely dominates a light rater.
     """
 
     ALLOWED_DECADES = [
@@ -103,46 +105,83 @@ class Decade(Candidates):
         self.decade: str | None = None
 
     def __call__(self, table: pd.DataFrame) -> pd.Index:
-        print("searching for candidates based on decade")
         movies_df = _load_movies_df()
 
-        # Only consider movies that are in both the group's table and metadata
+        # Only consider movies present in metadata
         cols = [c for c in table.columns if c in movies_df.index]
         if not cols:
-            print("not cols")
+            self.decade = None
             return pd.Index([], dtype=int)
 
-        # Group popularity for each movie (how many users rated it)
-        intensities = table.loc[:, cols].notnull().sum(axis=0)
-        print("intensities: ", intensities)
-
-        # Attach decade info
-        sub = movies_df.loc[cols].copy()
-        sub["intensity"] = intensities
-        sub = sub[sub["decade"].notna()]
-        print("sub: ", sub.head())
-
-        if sub.empty:
-            print("sub empty")
+        n_users = len(table.index)
+        if n_users == 0:
+            self.decade = None
             return pd.Index([], dtype=int)
 
-        # Average intensity per decade (use whatever decades actually appear)
-        decade_stats = sub.groupby("decade")["intensity"].mean()
-        decade_stats = decade_stats.dropna()
+        # Per-user normalized decade distributions
+        decade_scores: dict[str, float] = {}
 
-        if decade_stats.empty:
-            print("decade stats empty: ", decade_stats)
+        for user_id, row in table.loc[:, cols].iterrows():
+            rated_mask = row.notna()
+            rated_movie_ids = row.index[rated_mask]
+            if len(rated_movie_ids) == 0:
+                # User has no ratings in the considered columns
+                continue
+
+            # Get decades for this user's rated movies
+            user_movies = movies_df.loc[rated_movie_ids]
+            decades = user_movies["decade"].dropna()
+
+            if decades.empty:
+                # User did not rate any movie with a known decade
+                continue
+
+            # Count how many ratings in each decade for this user
+            counts = decades.value_counts()
+            total = counts.sum()
+            if total == 0:
+                continue
+
+            # Normalize to per-user shares (sum to 1 for that user)
+            shares = counts / total
+
+            for dec, share in shares.items():
+                if dec not in self.ALLOWED_DECADES:
+                    continue
+                decade_scores[dec] = decade_scores.get(dec, 0.0) + float(share)
+
+        if not decade_scores:
+            self.decade = None
             return pd.Index([], dtype=int)
 
-        best_decade = decade_stats.idxmax()
+        # Average share per user (users with 0 in a decade implicitly contribute 0)
+        avg_scores = {dec: score / n_users for dec, score in decade_scores.items()}
+        decade_stats = pd.Series(avg_scores).sort_values(ascending=False)
+
+        best_decade = decade_stats.index[0]
         self.decade = str(best_decade)
-        print("The best decade is: ", self.decade)
 
         # Return ALL movies from that decade (even those never rated by the group)
         all_decade_movies = movies_df.index[movies_df["decade"] == best_decade]
         return all_decade_movies.astype(int)
 
+
     def get_explanation_string(self, movie_id: int) -> str:
+        """
+        Return an explanation string ONLY if the movie is actually from self.decade.
+        Otherwise return an empty string (meaning: no explanation).
+        """
+        movies_df = _load_movies_df()
+
+        if movie_id not in movies_df.index or self.decade is None:
+            return ""
+
+        movie_decade = movies_df.loc[movie_id, "decade"]
+
+        # If the movie is not from this decade, do not generate an explanation
+        if pd.isna(movie_decade) or str(movie_decade) != str(self.decade):
+            return ""
+
         movie_name = get_movie_name_from_id(movie_id)
         return (
             f"If your group had not rated movies from the {self.decade}, "
@@ -224,8 +263,15 @@ class Most_agreed_items(Candidates):
 
 class GenresNotRated(Candidates):
     """
-    Choose the most often-rated genre for this group and return candidates
+    Choose the most engaged genre for this group and return candidates
     as ALL movies of that genre.
+
+    Engagement is computed FAIRLY per user:
+
+        - For each user, compute a normalized distribution of their ratings
+          over genres (per-user shares sum to 1).
+        - Average these shares across users, so one heavy rater does not
+          dominate a light rater.
 
     This corresponds to:
         "If your group had 0 engagement with this genre, then movie B would
@@ -245,27 +291,52 @@ class GenresNotRated(Candidates):
             self.genre = None
             return pd.Index([], dtype=int)
 
-        intensities = table.loc[:, cols].notnull().sum(axis=0)
-
-        # We will sum intensity per genre
-        genre_popularity: dict[str, int] = {}
-
-        for movie_id in cols:
-            genres_str = movies_df.loc[movie_id, "genres"]
-            if pd.isna(genres_str) or genres_str == "(no genres listed)":
-                continue
-            genres = str(genres_str).split("|")
-            weight = int(intensities[movie_id])
-            for g in genres:
-                genre_popularity[g] = genre_popularity.get(g, 0) + weight
-
-        if not genre_popularity:
+        n_users = len(table.index)
+        if n_users == 0:
             self.genre = None
             return pd.Index([], dtype=int)
 
-        # Most engaged genre
-        best_genre = max(genre_popularity.items(), key=lambda kv: kv[1])[0]
-        self.genre = best_genre
+        genre_scores: dict[str, float] = {}
+
+        for user_id, row in table.loc[:, cols].iterrows():
+            rated_mask = row.notna()
+            rated_movie_ids = row.index[rated_mask]
+            if len(rated_movie_ids) == 0:
+                continue
+
+            user_movies = movies_df.loc[rated_movie_ids]
+
+            # Build user-level genre counts
+            user_genre_counts: dict[str, int] = {}
+            for mid, g_str in user_movies["genres"].items():
+                if pd.isna(g_str) or g_str == "(no genres listed)":
+                    continue
+                genres = str(g_str).split("|")
+                for g in genres:
+                    user_genre_counts[g] = user_genre_counts.get(g, 0) + 1
+
+            if not user_genre_counts:
+                continue
+
+            total = sum(user_genre_counts.values())
+            if total == 0:
+                continue
+
+            # Normalize to per-user shares
+            for g, cnt in user_genre_counts.items():
+                share = cnt / total
+                genre_scores[g] = genre_scores.get(g, 0.0) + float(share)
+
+        if not genre_scores:
+            self.genre = None
+            return pd.Index([], dtype=int)
+
+        # Average share per user
+        avg_scores = {g: score / n_users for g, score in genre_scores.items()}
+        genre_stats = pd.Series(avg_scores).sort_values(ascending=False)
+
+        best_genre = genre_stats.index[0]
+        self.genre = str(best_genre)
 
         # Candidates: ALL movies with that genre (not just those the group rated)
         def has_genre(gs: str) -> bool:
@@ -287,19 +358,19 @@ class GenresNotRated(Candidates):
 def get_candidates() -> list[Candidates]:
     return [Decade(), Most_agreed_items(), GenresNotRated()]
 
+
 def test_best_decade():
     from Recommender.recommender import Recommender
-    from Recommender.group_aggregation_functions import get_group_agg_func
 
     r = Recommender.load_from_path("ml-latest-small/ratings.csv")
     group = r.table.sample(5, random_state=42)
     cand = Decade()
     candidates = cand(group)
 
-    print(candidates)
+    print("Best decade:", cand.decade)
+    print("Number of decade candidates:", len(candidates))
+    print("First 20 candidates:", candidates[:20])
 
-
-    
 
 def main():
     test_best_decade()
